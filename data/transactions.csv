@@ -1,0 +1,11 @@
+Data,Descricao,Categoria,Tipo_Transacao,Valor,Local
+2025-08-25,Uber,Transporte,Compra Credito,-25.5,Sao Paulo
+2025-08-26,Padaria da Esquina,Alimentacao,Compra Debito,-12.0,Rio de Janeiro
+2025-08-26,Amazon,Compras Online,Compra Credito,-150.75,Internet
+2025-08-27,Transferencia Pix,Transferencia,Transferencia,50.0,Sao Paulo
+2025-08-28,Supermercado Bom Preco,Alimentacao,Compra Debito,-85.3,Sao Paulo
+2025-08-28,Spotify,Assinaturas,Assinatura Credito,-21.9,Internet
+2025-08-29,Restaurante Sabor,Alimentacao,Compra Credito,-45.0,Sao Paulo
+2025-08-29,Pagamento Fatura,Pagamento,Pagamento,-500.0,Sao Paulo
+2025-08-29,Salario,Salario,Recebimento,2500.0,Sao Paulo
+2025-08-29,Aluguel,Moradia,Pagamento Boleto,-1200.0,Sao Paulo
