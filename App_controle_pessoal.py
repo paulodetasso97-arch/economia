@@ -223,9 +223,36 @@ def create_flow_plot(df):
 def main():
     st.set_page_config(layout="wide", page_title="Dashboard Financeiro Nubank")
 
-    # CSS para cartões animados e botões
+    # CSS para barra superior fixa, cartões animados e botões
     st.markdown("""
         <style>
+        /* Barra superior fixa */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            background: #5d2054;
+            color: #fff;
+            z-index: 1000;
+            padding: 18px 0 12px 0;
+            box-shadow: 0 2px 8px 0 rgba(93,32,84,0.10);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .top-bar form {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+        .top-bar label {
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        .stApp {
+            padding-top: 90px !important;
+        }
         .kpi-card {
             background: #fff;
             border-radius: 16px;
@@ -266,22 +293,44 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    st.title("Dashboard Financeiro Nubank")
-    st.markdown("Análise de suas transações em um só lugar.")
-
     df = load_and_process_data()
 
-    # ------------------ SIDEBAR - FILTROS ------------------
-    st.sidebar.header("Filtros de Dados")
-
-    # Filtro de datas usando o range real dos dados
+    # ----------- BARRA SUPERIOR FIXA COM FILTROS -----------
     min_date = df['Data'].min().date()
     max_date = df['Data'].max().date()
-    start_date = st.sidebar.date_input("Data de início", min_value=min_date, max_value=max_date, value=min_date)
-    end_date = st.sidebar.date_input("Data de fim", min_value=min_date, max_value=max_date, value=max_date)
 
+    # Usando o container para simular barra superior fixa
+    with st.container():
+        st.markdown(
+            f"""
+            <div class="top-bar">
+                <form>
+                    <label>Data de início:</label>
+                    <input type="date" id="start_date" name="start_date" min="{min_date}" max="{max_date}" value="{min_date}">
+                    <label>Data de fim:</label>
+                    <input type="date" id="end_date" name="end_date" min="{min_date}" max="{max_date}" value="{max_date}">
+                </form>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # Filtros interativos (abaixo da barra superior)
+    col_f1, col_f2, col_f3, col_f4 = st.columns([2,2,3,3])
+    with col_f1:
+        start_date = st.date_input("Data de início", min_value=min_date, max_value=max_date, value=min_date, key="start_date_input")
+    with col_f2:
+        end_date = st.date_input("Data de fim", min_value=min_date, max_value=max_date, value=max_date, key="end_date_input")
+    with col_f3:
+        transaction_types = ['Todos'] + sorted(list(df['Tipo_Transacao'].unique()))
+        selected_type = st.selectbox("Tipo de Transação", transaction_types, key="tipo_transacao")
+    with col_f4:
+        establishments = ['Todos'] + sorted(list(df['Descricao'].unique()))
+        selected_establishment = st.selectbox("Estabelecimento", establishments, key="estabelecimento")
+
+    # Validação de datas
     if start_date > end_date:
-        st.sidebar.warning("A data de início não pode ser maior que a data de fim.")
+        st.warning("A data de início não pode ser maior que a data de fim.")
         df_filtered = df.copy()
     else:
         df_filtered = df[(df['Data'].dt.date >= start_date) & (df['Data'].dt.date <= end_date)]
@@ -289,24 +338,24 @@ def main():
     # Remove transações de valor zero
     df_filtered = df_filtered[df_filtered['Valor'] != 0]
 
-    transaction_types = ['Todos'] + sorted(list(df_filtered['Tipo_Transacao'].unique()))
-    selected_type = st.sidebar.selectbox("Tipo de Transação:", transaction_types)
     if selected_type != 'Todos':
         df_filtered = df_filtered[df_filtered['Tipo_Transacao'] == selected_type]
-
-    establishments = ['Todos'] + sorted(list(df_filtered['Descricao'].unique()))
-    selected_establishment = st.sidebar.selectbox("Estabelecimento:", establishments)
     if selected_establishment != 'Todos':
         df_filtered = df_filtered[df_filtered['Descricao'] == selected_establishment]
 
-    min_val, max_val = st.sidebar.slider(
+    min_val, max_val = float(df['Valor'].min()), float(df['Valor'].max())
+    val_range = st.slider(
         "Faixa de Valor (R$)",
-        float(df['Valor'].min()), float(df['Valor'].max()),
-        (float(df['Valor'].min()), float(df['Valor'].max()))
+        min_val, max_val,
+        (min_val, max_val),
+        key="valor_slider"
     )
-    df_filtered = df_filtered[(df_filtered['Valor'] >= min_val) & (df_filtered['Valor'] <= max_val)]
+    df_filtered = df_filtered[(df_filtered['Valor'] >= val_range[0]) & (df_filtered['Valor'] <= val_range[1])]
 
     # ------------------ KPIs EM CARTÕES ANIMADOS ------------------
+    st.title("💸 Dashboard Financeiro Nubank")
+    st.markdown("Análise das suas transações em um só lugar.")
+
     st.markdown("---")
     st.subheader("Resumo das Transações")
 
@@ -341,7 +390,7 @@ def main():
     with col4:
         st.markdown(f"""
         <div class="kpi-card">
-            <div class="kpi-label">Nº Transações</div>
+            <div class="kpi-label">Nº de Transações</div>
             <div class="kpi-green">{num_transactions}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -363,22 +412,36 @@ def main():
     st.markdown("---")
     st.markdown(generate_narrative(df_filtered))
 
-    # ------------------ GRÁFICOS E RANKING ------------------
+    # ------------------ MAIS ANÁLISES E EFEITOS ------------------
     st.markdown("---")
-    st.subheader("Análise Gráfica e Detalhada")
+    st.subheader("Análises Gráficas e Detalhadas")
 
-    col1, col2 = st.columns(2)
-    with col1:
+    colg1, colg2 = st.columns(2)
+    with colg1:
         st.plotly_chart(create_total_by_month_plot(df_filtered), use_container_width=True, key="total_plot")
-    with col2:
+    with colg2:
         st.plotly_chart(create_top_establishments_plot(df_filtered), use_container_width=True, key="establishments_plot")
-    
-    # Novo componente de ranking
+
     st.markdown("### Ranking de Gastos por Estabelecimento")
     st.dataframe(create_ranking_by_description(df_filtered), use_container_width=True)
 
-    st.plotly_chart(create_category_distribution_plot(df_filtered), use_container_width=True, key="category_plot")
-    st.plotly_chart(create_flow_plot(df_filtered), use_container_width=True, key="flow_plot")
+    colg3, colg4 = st.columns(2)
+    with colg3:
+        st.plotly_chart(create_category_distribution_plot(df_filtered), use_container_width=True, key="category_plot")
+    with colg4:
+        st.plotly_chart(create_flow_plot(df_filtered), use_container_width=True, key="flow_plot")
+
+    # NOVA ANÁLISE: Evolução do saldo acumulado
+    st.markdown("### Evolução do Saldo Acumulado")
+    saldo_acumulado = df_filtered.sort_values('Data').copy()
+    saldo_acumulado['Saldo Acumulado'] = saldo_acumulado['Valor'].cumsum()
+    fig_saldo = px.line(saldo_acumulado, x='Data', y='Saldo Acumulado', title='Saldo Acumulado ao Longo do Tempo')
+    st.plotly_chart(fig_saldo, use_container_width=True)
+
+    # NOVA ANÁLISE: Distribuição dos valores das transações
+    st.markdown("### Distribuição dos Valores das Transações")
+    fig_hist = px.histogram(df_filtered, x='Valor', nbins=30, title='Distribuição dos Valores das Transações')
+    st.plotly_chart(fig_hist, use_container_width=True)
 
     # ------------------ TABELA DINÂMICA ------------------
     st.markdown("---")
